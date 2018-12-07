@@ -1,0 +1,4 @@
+[submodule "src/world"]
+	path = src/world
+	url = https://github.com/BlueDi/Cat-and-Mouse-ROS-World.git
+
