@@ -2,3 +2,6 @@
 	path = src/world
 	url = https://github.com/BlueDi/Cat-and-Mouse-ROS-World.git
 
+[submodule "src/robots"]
+	path = src/robots
+	url = https://github.com/BlueDi/wall_follower
