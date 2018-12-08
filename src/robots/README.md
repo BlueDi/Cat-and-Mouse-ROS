@@ -1,10 +1,10 @@
-# Wall Follower - A Simple Reactive Robot
+# Cat and Mouse Robots
 
 <center>
   <img src="img/example.png" width="50%" />
 </center>
 
-In this project you'll find a robot that can follow a wall.
+In this package you'll find robots for the cat_and_mouse project.
 
 It was developed using ROS and STDR Simulator.
 
@@ -42,3 +42,4 @@ Replace `<id>` with the respective id of the robot you wish to control.
 
 **For example:** `rosrun wall_follower avoid_wall.py 0`
 **Or:** `python avoid_wall.py 1`
+

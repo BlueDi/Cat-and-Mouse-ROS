@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ROBO)
+project(cat_and_mouse_robots)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy
@@ -9,7 +9,6 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package()
 
 include_directories(
-# include
   ${catkin_INCLUDE_DIRS}
 )
 

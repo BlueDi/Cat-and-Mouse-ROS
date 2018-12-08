@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>ROBO</name>
-  <version>0.0.0</version>
-  <description>Project for ROBO at FEUP</description>
+  <name>cat_and_mouse_robots</name>
+  <version>1.1.0</version>
+  <description>Cat and mouse game simulated in ROS</description>
 
   <maintainer email="diogohmcruz@hotmail.com">bluedi</maintainer>
 
