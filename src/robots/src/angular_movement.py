@@ -79,7 +79,7 @@ if __name__ == '__main__':
         position_topic = '/robot0/odom'
         odom_subscriber = rospy.Subscriber(position_topic, Odometry, odomCallback)
         
-        angular_speed, relative_angle, isClockwise = get_abs_rotation(90)
+        angular_speed, relative_angle, isClockwise = get_rotation(90)
         rotate(angular_speed, relative_angle, isClockwise)
         
         rotate(0.4, 3.14/2, True)
