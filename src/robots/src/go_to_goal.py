@@ -7,6 +7,7 @@ from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
 
 
+MIN_DISTANCE = 0.2
 robot_odom = Odometry()
 
 
@@ -26,7 +27,8 @@ def go_to_goal(x_goal, y_goal):
     global robot_odom
     velocity_message = Twist()
     
-    while(True):
+    distance = MIN_DISTANCE + 1
+    while distance > MIN_DISTANCE:
         position = robot_odom.pose.pose.position
         orientation = robot_odom.pose.pose.orientation
         orientation_array = [orientation.x, orientation.y, orientation.z, orientation.w]
@@ -45,7 +47,8 @@ def go_to_goal(x_goal, y_goal):
 
         velocity_publisher.publish(velocity_message)
         print(distance)
-        if(distance < 0.02):
+        
+        if rospy.is_shutdown():
             break
 
 
