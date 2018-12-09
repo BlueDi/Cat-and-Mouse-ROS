@@ -10,6 +10,9 @@
 	<node pkg="stdr_robot" type="robot_handler" name="$(anon robot_spawn_0)" args="add $(find cat_and_mouse_robots)/resources/robots/simplex.yaml 1 4.5 0" />
     <node pkg="stdr_robot" type="robot_handler" name="$(anon robot_spawn_1)" args="add $(find cat_and_mouse_robots)/resources/robots/simplex.yaml 7 4 3.14" />
 
+    <param name="x_goal" value="3.0" />
+    <param name="y_goal" value="3.0" />
+
 	<node name="go_to_goal" pkg="cat_and_mouse_robots" type="go_to_goal.py" output="screen" />
 </launch>
 
