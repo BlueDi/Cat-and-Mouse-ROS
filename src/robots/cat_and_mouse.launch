@@ -2,7 +2,7 @@
 	
 	<include file="$(find stdr_robot)/launch/robot_manager.launch" />
 	
-	<node type="stdr_server_node" pkg="stdr_server" name="stdr_server" output="screen" args="$(find cat_and_mouse_robots)/resources/maps/w.yaml"/>
+	<node type="stdr_server_node" pkg="stdr_server" name="stdr_server" output="screen" args="$(find cat_and_mouse_robots)/resources/maps/simple.yaml"/>
 
 	<node pkg="tf" type="static_transform_publisher" name="world2map" args="0 0 0 0 0 0  world map 100" />
 	
@@ -11,5 +11,6 @@
 	<node pkg="stdr_robot" type="robot_handler" name="cat0" args="add $(find stdr_resources)/resources/robots/cat.xml 3 3 1.57079632679 cat0" />
 	<node pkg="stdr_robot" type="robot_handler" name="mouse0" args="add $(find stdr_resources)/resources/robots/mouse.xml 1 1 1.57079632679 mouse0" />
 
-	<node name="go_to_goal" pkg="cat_and_mouse_robots" type="go_to_goal.py" output="screen" />
+    <param name="mouse_name" value="mouse0" />
+	<node name="mouse_movement" pkg="cat_and_mouse_robots" type="mouse_movement.py" output="screen" />
 </launch>
