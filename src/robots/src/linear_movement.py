@@ -5,17 +5,9 @@ import time
 from geometry_msgs.msg import Twist
 
 
-def move(speed, distance, is_forward):
-    rate = rospy.Rate(10)
+def move(velocity_publisher, speed, distance, is_forward):
     velocity_message = Twist()
-
     velocity_message.linear.x = abs(speed) if is_forward else -abs(speed)
-    velocity_message.linear.y = 0
-    velocity_message.linear.z = 0
-
-    velocity_message.angular.x = 0
-    velocity_message.angular.y = 0
-    velocity_message.angular.z = 0
 
     t0 = rospy.get_time()
     curr_distance = 0.0
@@ -23,9 +15,8 @@ def move(speed, distance, is_forward):
         t1 = rospy.get_time()
         curr_distance = speed * (t1 - t0)
         velocity_publisher.publish(velocity_message)
-        rate.sleep()
 
-    velocity_message.linear.x = 0
+    velocity_message = Twist()
     velocity_publisher.publish(velocity_message)
 
 
@@ -38,7 +29,7 @@ if __name__ == '__main__':
 
         time.sleep(2)
         
-        move(1, 2, True)
+        move(velocity_publisher, 1, 2, True)
 
     except rospy.ROSInterruptException:
         rospy.loginfo('node terminated.')

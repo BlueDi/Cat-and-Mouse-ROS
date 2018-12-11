@@ -16,7 +16,7 @@ def odomCallback(odom_message):
     robot_odom = odom_message
 
 
-def rotate(angular_speed, relative_angle, isClockwise):
+def rotate(velocity_publisher, angular_speed, relative_angle, isClockwise):
     '''
     Rotation of the robot to desired relative angle.
     This rotation is in the z axis.
@@ -47,7 +47,7 @@ def rotate(angular_speed, relative_angle, isClockwise):
     velocity_publisher.publish(velocity_message)
 
 
-def get_rotation(desired_angle):
+def get_rotation(robot_odom, desired_angle):
     '''
     Calculates the rotation of the robot to the desired angle.
     It returns a recomended angular velocity, the angle in radians, and the orientation of the turn as clockwise or counter-clockwise.
@@ -55,7 +55,6 @@ def get_rotation(desired_angle):
     @param desired_angle angle in degrees
     @return angular_speed, relative_angle, isClockwise
     '''
-    global robot_odom
     position = robot_odom.pose.pose.position
     orientation = robot_odom.pose.pose.orientation
     orientation_array = [orientation.x, orientation.y, orientation.z, orientation.w]
@@ -79,8 +78,8 @@ if __name__ == '__main__':
         position_topic = '/robot0/odom'
         odom_subscriber = rospy.Subscriber(position_topic, Odometry, odomCallback)
         
-        angular_speed, relative_angle, isClockwise = get_rotation(90)
-        rotate(angular_speed, relative_angle, isClockwise)
+        angular_speed, relative_angle, isClockwise = get_rotation(robot_odom, 90)
+        rotate(velocity_publisher, angular_speed, relative_angle, isClockwise)
         
         rotate(0.4, 3.14/2, True)
 
