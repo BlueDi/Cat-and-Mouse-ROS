@@ -61,7 +61,11 @@ def subscribers(mouse_name):
     rospy.Subscriber(map_metadata_topic, MapMetaData, map_metadataCallback)
 
 if __name__ == '__main__':
-    mouse_name = rospy.get_param("mouse_name")
+    try:    
+        mouse_name = rospy.get_param("mouse_name") or sys.argv[1]
+    except Exception:
+        mouse_name = 'mouse0'
+
     try:
         rospy.init_node(mouse_name + '_movement')
         
