@@ -8,9 +8,12 @@
 	
 	<include file="$(find stdr_gui)/launch/stdr_gui.launch"/>
 	
-	<node pkg="stdr_robot" type="robot_handler" name="cat0" args="add $(find stdr_resources)/resources/robots/cat.xml 3 3 1.57079632679 cat0" />
-	<node pkg="stdr_robot" type="robot_handler" name="mouse0" args="add $(find stdr_resources)/resources/robots/mouse.xml 1 1 1.57079632679 mouse0" />
-
+	<node pkg="stdr_robot" type="robot_handler" name="cat0" args="add $(find stdr_resources)/resources/robots/cat.xml 4 4 1.57079632679 cat0" />
+	<node pkg="stdr_robot" type="robot_handler" name="mouse0" args="add $(find stdr_resources)/resources/robots/mouse.xml 4 5 1.57079632679 mouse0" />
+	
     <param name="mouse_name" value="mouse0" />
+    <param name="cat_name" value="cat0" />
 	<node name="mouse_movement" pkg="cat_and_mouse_robots" type="mouse_movement.py" output="screen" />
+	<node name="cat_movement" pkg="cat_and_mouse_robots" type="cat_movement.py" output="screen" />
+
 </launch>
