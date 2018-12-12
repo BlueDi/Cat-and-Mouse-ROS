@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import time
 import re
 import rospy
 import tf
@@ -12,6 +13,7 @@ map_width = map_metadata.width * map_resolution
 map_height = map_metadata.height * map_resolution
 
 robots = {}
+start = int(round(time.time() * 1000))
 
 def mouse_callback(data):
     id = data.child_frame_id
@@ -56,7 +58,10 @@ def fire():
             rl += ", " + rs
     rl += "]"
 
-    print('{ "map" : { "width": %s, "height": %s, "resolution": %s }, "robots" : %s }', map_width, map_height, map_resolution, rl)
+    global start
+    tdiff = int(round(time.time() * 1000)) - start
+
+    print '{"ts": %s, "map" : { "width": %s, "height": %s, "resolution": %s }, "robots" : %s }' % (tdiff , map_width, map_height, map_resolution, rl)
 
 def listener():
     rospy.init_node('listener', anonymous=True)
