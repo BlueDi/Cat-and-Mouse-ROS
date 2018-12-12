@@ -16,4 +16,9 @@
 	<node name="mouse_movement" pkg="cat_and_mouse_robots" type="mouse_movement.py" output="screen" />
 	<node name="cat_movement" pkg="cat_and_mouse_robots" type="cat_movement.py" output="screen" />
 
+    <node name="cat_mouse_world" pkg="cat_mouse_world" type="cat_mouse_world" output="screen">
+        <param name="n_cats" value="1" />
+        <param name="n_mice" value="1" />
+    </node>
+
 </launch>
