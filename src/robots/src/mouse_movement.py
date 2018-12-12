@@ -37,7 +37,6 @@ def generate_random_coords():
 def go_to_goal(x_goal, y_goal):
     '''PID Controller'''
     global robot_odom
-    rate = rospy.Rate(10)
     distance = 0.2 + 1
     while distance > 0.2 and not rospy.is_shutdown():
         velocity_message, distance = move_to_goal(robot_odom, x_goal, y_goal)
@@ -68,6 +67,8 @@ if __name__ == '__main__':
 
     try:
         rospy.init_node(mouse_name + '_movement')
+        rate = rospy.Rate(10)
+        rate.sleep()
         
         cmd_vel_topic = '/' + mouse_name + '/cmd_vel'
         velocity_publisher = rospy.Publisher(cmd_vel_topic, Twist, queue_size=10)

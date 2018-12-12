@@ -26,17 +26,16 @@ def sightCallback(sight_message):
     '''Mouse Sight memory update'''
     global mouse_position
     mouse_position = sight_message
-    cat_movement()
 
 
 def stop():
+    mouse_position = RoboSpotted()
     velocity_publisher.publish(Twist())
 
 
 def go_to_goal(x_goal, y_goal):
     '''PID Controller'''
     global robot_odom
-    rate = rospy.Rate(10)
     distance = 0.2 + 1
     while distance > 0.2 and not rospy.is_shutdown():
         velocity_message, distance = move_to_goal(robot_odom, x_goal, y_goal)
@@ -55,19 +54,15 @@ def subscribers(cat_name):
 
 def cat_movement():
     global mouse_position, robot_odom
-    x_goal = robot_odom.pose.pose.position.x + mouse_position.dist * cos(mouse_position.angle)
-    y_goal = robot_odom.pose.pose.position.y + mouse_position.dist * sin(mouse_position.angle)
-    print(x_goal, y_goal)
-    go_to_goal(x_goal, y_goal)
-
-
-def cat_movement2(mouse_position):
-    global robot_odom
-    print(mouse_position)
-    angular_speed, relative_angle, isClockwise = get_rotation(robot_odom, abs(degrees(mouse_position.angle)))
-    rotate(velocity_publisher, angular_speed, relative_angle, isClockwise)
-    move(velocity_publisher, mouse_position.dist * 0.5, mouse_position.dist, True)
-    #stop()
+    saw_mouse = mouse_position != RoboSpotted()
+    if saw_mouse:
+        position = robot_odom.pose.pose.position
+        x_goal = position.x + mouse_position.dist * cos(mouse_position.angle)
+        y_goal = position.y + mouse_position.dist * sin(mouse_position.angle)
+        print(mouse_position, x_goal, y_goal)
+        go_to_goal(x_goal, y_goal)
+    else:
+        move(velocity_publisher, 3, 0.5, True)
 
 
 if __name__ == '__main__':
@@ -78,13 +73,15 @@ if __name__ == '__main__':
 
     try:
         rospy.init_node(cat_name + '_movement')
+        rate = rospy.Rate(10)
         
         cmd_vel_topic = '/' + cat_name + '/cmd_vel'
         velocity_publisher = rospy.Publisher(cmd_vel_topic, Twist, queue_size=10)
         
         subscribers(cat_name)
 
-        rospy.spin()
+        while not rospy.is_shutdown():
+            cat_movement()
 
     except rospy.ROSInterruptException:
         rospy.loginfo(cat_name + ' terminated.')
