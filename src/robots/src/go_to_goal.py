@@ -38,12 +38,14 @@ def move_to_goal(robot_odom, x_goal, y_goal):
     orientation = robot_odom.pose.pose.orientation
     orientation_array = [orientation.x, orientation.y, orientation.z, orientation.w]
     distance = abs(getDistance(x_goal, y_goal, position.x, position.y))
-    linear_speed = distance * 0.5 if distance > 1 else 2/distance #Proportional Controller
+    linear_speed = distance * 0.5 #Proportional Controller
 
     k_angular = 4.0
     roll, pitch, yaw = euler_from_quaternion(orientation_array)
     desired_angle_goal = atan2(y_goal - position.y, x_goal - position.x)
     angular_speed = (desired_angle_goal - yaw) * k_angular
+    if abs(angular_speed) < 0.0001:
+        angular_speed = 0
 
     velocity_message.linear.x = linear_speed
     velocity_message.angular.z = angular_speed
