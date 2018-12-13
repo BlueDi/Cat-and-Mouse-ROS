@@ -26,6 +26,7 @@ def sightCallback(sight_message):
     '''Mouse Sight memory update'''
     global mouse_position
     mouse_position = sight_message
+    cat_movement()
 
 
 def stop():
@@ -59,7 +60,7 @@ def cat_movement():
         position = robot_odom.pose.pose.position
         x_goal = position.x + mouse_position.dist * cos(mouse_position.angle)
         y_goal = position.y + mouse_position.dist * sin(mouse_position.angle)
-        print(mouse_position, x_goal, y_goal)
+        print x_goal, y_goal
         go_to_goal(x_goal, y_goal)
     else:
         move(velocity_publisher, 3, 0.5, True)
@@ -80,8 +81,7 @@ if __name__ == '__main__':
         
         subscribers(cat_name)
 
-        while not rospy.is_shutdown():
-            cat_movement()
+        rospy.spin()
 
     except rospy.ROSInterruptException:
         rospy.loginfo(cat_name + ' terminated.')
