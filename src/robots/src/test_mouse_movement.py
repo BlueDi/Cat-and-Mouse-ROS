@@ -20,6 +20,7 @@ mouse_linear_speed = mouse_linear_speed_unscaled #will be scaled by callbacks
 mouse_angular_speed = pi / 180 * 90
 
 drift_angle = pi / 180 * 30
+slow_down_on_arrival = True
 
 def odomCallback(odom_message):
     '''Odometry memory update'''
@@ -107,7 +108,9 @@ def move_to_goal(robot_odom, goal_x, goal_y):
     linear_speed = mouse_linear_speed
     angular_speed = mouse_angular_speed
 
-    distance = abs(getDistance(bot_x, bot_y, goal_x, goal_y))    
+    distance = abs(getDistance(bot_x, bot_y, goal_x, goal_y))  
+    if distance < linear_speed and slow_down_on_arrival:
+        linear_speed = distance
 
     angle_aux = atan2(goal_y - position.y, goal_x - position.x)
     if angle_aux >= 0:
@@ -115,20 +118,36 @@ def move_to_goal(robot_odom, goal_x, goal_y):
     else:
         target_angle = 2 * pi + angle_aux
 
-    angle_diff = target_angle - bot_angle
-    # need to fix this for angle ~ 2pi vs 0
-    
+    angle_diff = 0
+    if target_angle > bot_angle:
+        s1 = abs(target_angle - bot_angle)
+        s2 = abs(bot_angle - (target_angle - 2 * pi))
+
+        if s1 <= s2:
+            angle_diff = s1
+        else:
+            angle_diff = -s2
+    else:
+        s1 = abs(bot_angle - target_angle)
+        s2 = abs(target_angle - (bot_angle - 2 * pi))
+
+        if s1 <= s2:
+            angle_diff = -s1
+        else:
+            angle_diff = s2
     
     if abs(angle_diff) > angular_speed:
         if angle_diff > 0:
-            angular_speed = -angular_speed
-        else:
             angular_speed = angular_speed
+        else:
+            angular_speed = -angular_speed
     else:
         angular_speed = angle_diff
     
     if abs(angular_speed) < 0.005:
         angular_speed = 0
+    if abs(linear_speed) < 0.005:
+        linear_speed = 0
 
     if abs(angular_speed) < drift_angle:
         velocity_message.linear.x = linear_speed
@@ -136,8 +155,8 @@ def move_to_goal(robot_odom, goal_x, goal_y):
         velocity_message.linear.x = 0
     velocity_message.angular.z = angular_speed
 
-    print("Robot Angle: ", bot_angle, " Target Angle: ", target_angle)
-    print("Robot Speed: ", linear_speed, " Robot Angular: ", angular_speed)
+    print("Robot Angle: ", bot_angle, " Target Angle: ", target_angle, "Angle_Diff", angle_diff)
+    print("Robot Speed: ", velocity_message.linear.x, " Robot Angular: ", velocity_message.angular.z)
     return velocity_message, distance
 
 
