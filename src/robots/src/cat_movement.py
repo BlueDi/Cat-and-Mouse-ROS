@@ -27,9 +27,9 @@ def sightCallback(sight_message):
     global mouse_position
     mouse_position = closest_mouse(sight_message)
     if mouse_position == []:
-        print 'No mouse near'
-    elif mouse_position.dist < 0.1:
-        print 'caught'
+        rospy.loginfo('No mouse near')
+    elif 0 <= mouse_position.dist < 0.1:
+        rospy.loginfo('Caught a mouse')
 
 
 def stop():
@@ -48,45 +48,63 @@ def go_to_goal(x_goal, y_goal):
     stop()
 
 
-def subscribers(cat_name):
-    position_topic = '/' + cat_name + '/odom'
+def subscribers():
+    position_topic = '/' + CAT_NAME + '/odom'
     rospy.Subscriber(position_topic, Odometry, odomCallback)
 
-    sight_topic = '/' + cat_name + '/sight'
+    sight_topic = '/' + CAT_NAME + '/sight'
     rospy.Subscriber(sight_topic, RobotsSpotted, sightCallback)
 
 
 def closest_mouse(sight_message):
     visible_mice = sight_message.robotsSpotted
-    return min(visible_mice, key=lambda x: x.dist) if len(visible_mice) > 0 else []
+    if len(visible_mice) > 0:
+        closest_mouse = min(visible_mice, key=lambda x: x.dist)
+    return closest_mouse if closest_mouse.dist > 0 else []
+
+
+def cat_chase():
+    '''Moves the cat in the direction of the closest mouse'''
+    global mouse_position, robot_odom
+    position = robot_odom.pose.pose.position
+    x_goal = position.x + mouse_position.dist * cos(mouse_position.angle)
+    y_goal = position.y + mouse_position.dist * sin(mouse_position.angle)
+    go_to_goal(x_goal, y_goal)
+
+
+def cat_roam():
+    '''Make the cat roam the map to search for a mouse'''
+    move(velocity_publisher, 3, 0.5, True)
 
 
 def cat_movement():
-    global mouse_position, robot_odom
+    '''Control the cat movement'''
+    global mouse_position
     saw_mouse = mouse_position != []
     if saw_mouse:
-        position = robot_odom.pose.pose.position
-        x_goal = position.x + mouse_position.dist * cos(mouse_position.angle)
-        y_goal = position.y + mouse_position.dist * sin(mouse_position.angle)
-        go_to_goal(x_goal, y_goal)
+        rospy.loginfo('Saw a mouse!')
+        cat_chase()
     else:
-        move(velocity_publisher, 3, 0.5, True)
+        cat_roam()
 
 
 if __name__ == '__main__':
     try:
-        cat_name = rospy.get_param("cat_name") or sys.argv[1]
-    except Exception:
-        cat_name = 'cat0'
+        CAT_NAME = rospy.get_param("cat_name")
+    except KeyError:
+        try:
+            CAT_NAME = sys.argv[1]
+        except IndexError:
+            CAT_NAME = 'cat0'
 
     try:
-        rospy.init_node(cat_name + '_movement')
+        rospy.init_node(CAT_NAME + '_movement')
         rate = rospy.Rate(10)
         
-        cmd_vel_topic = '/' + cat_name + '/cmd_vel'
+        cmd_vel_topic = '/' + CAT_NAME + '/cmd_vel'
         velocity_publisher = rospy.Publisher(cmd_vel_topic, Twist, queue_size=2)
         
-        subscribers(cat_name)
+        subscribers()
 
         while not rospy.is_shutdown():
             cat_movement()
@@ -94,5 +112,5 @@ if __name__ == '__main__':
         rospy.spin()
 
     except rospy.ROSInterruptException:
-        rospy.loginfo(cat_name + ' terminated.')
+        rospy.loginfo(CAT_NAME + ' terminated.')
 

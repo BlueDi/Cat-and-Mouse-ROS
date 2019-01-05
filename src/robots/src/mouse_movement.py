@@ -52,28 +52,31 @@ def random_movement():
     go_to_goal(rng_x, rng_y)
 
 
-def subscribers(mouse_name):
-    position_topic = '/' + mouse_name + '/odom'
+def subscribers():
+    position_topic = '/' + MOUSE_NAME + '/odom'
     rospy.Subscriber(position_topic, Odometry, odomCallback)
     
     map_metadata_topic = '/map_metadata'
     rospy.Subscriber(map_metadata_topic, MapMetaData, map_metadataCallback)
 
 if __name__ == '__main__':
-    try:    
-        mouse_name = rospy.get_param("mouse_name") or sys.argv[1]
-    except Exception:
-        mouse_name = 'mouse0'
+    try:
+        MOUSE_NAME = rospy.get_param("mouse_name")
+    except KeyError:
+        try:
+            MOUSE_NAME = sys.argv[1]
+        except IndexError:
+            MOUSE_NAME = 'mouse0'
 
     try:
-        rospy.init_node(mouse_name + '_movement')
+        rospy.init_node(MOUSE_NAME + '_movement')
         rate = rospy.Rate(10)
         rate.sleep()
         
-        cmd_vel_topic = '/' + mouse_name + '/cmd_vel'
+        cmd_vel_topic = '/' + MOUSE_NAME + '/cmd_vel'
         velocity_publisher = rospy.Publisher(cmd_vel_topic, Twist, queue_size=10)
         
-        subscribers(mouse_name)        
+        subscribers()        
 
         i = 10
         while i > 0 and not rospy.is_shutdown():
@@ -81,5 +84,5 @@ if __name__ == '__main__':
             random_movement()
 
     except rospy.ROSInterruptException:
-        rospy.loginfo(mouse_name + ' terminated.')
+        rospy.loginfo(MOUSE_NAME + ' terminated.')
 
