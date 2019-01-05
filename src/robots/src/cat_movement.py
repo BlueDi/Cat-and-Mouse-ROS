@@ -12,7 +12,7 @@ from angular_movement import *
 from linear_movement import *
 
 
-mouse_position = RobotsSpotted()
+mouse_position = []
 robot_odom = Odometry()
 
 
@@ -30,8 +30,6 @@ def sightCallback(sight_message):
         print 'No mouse near'
     elif mouse_position.dist < 0.1:
         print 'caught'
-    else:
-        cat_movement()
 
 
 def stop():
@@ -76,7 +74,7 @@ def cat_movement():
 
 
 if __name__ == '__main__':
-    try:    
+    try:
         cat_name = rospy.get_param("cat_name") or sys.argv[1]
     except Exception:
         cat_name = 'cat0'
@@ -86,9 +84,12 @@ if __name__ == '__main__':
         rate = rospy.Rate(10)
         
         cmd_vel_topic = '/' + cat_name + '/cmd_vel'
-        velocity_publisher = rospy.Publisher(cmd_vel_topic, Twist, queue_size=10)
+        velocity_publisher = rospy.Publisher(cmd_vel_topic, Twist, queue_size=2)
         
         subscribers(cat_name)
+
+        while not rospy.is_shutdown():
+            cat_movement()
 
         rospy.spin()
 
