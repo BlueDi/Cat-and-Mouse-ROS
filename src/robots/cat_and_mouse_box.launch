@@ -1,24 +1,30 @@
 <launch>
-	
-	<include file="$(find stdr_robot)/launch/robot_manager.launch" />
-	
-	<node type="stdr_server_node" pkg="stdr_server" name="stdr_server" output="screen" args="$(find cat_and_mouse_robots)/resources/maps/simple_box.yaml"/>
 
+	<include file="$(find stdr_robot)/launch/robot_manager.launch" />
+
+	<node type="stdr_server_node" pkg="stdr_server" name="stdr_server" output="screen" args="$(find cat_and_mouse_robots)/resources/maps/simple_box.yaml"/>
+	
 	<node pkg="tf" type="static_transform_publisher" name="world2map" args="0 0 0 0 0 0  world map 100" />
 	
 	<include file="$(find stdr_gui)/launch/stdr_gui.launch"/>
-	
-	<node pkg="stdr_robot" type="robot_handler" name="cat0" args="add $(find stdr_resources)/resources/robots/cat.xml 4 4 1.57079632679 cat0" />
-	<node pkg="stdr_robot" type="robot_handler" name="mouse0" args="add $(find stdr_resources)/resources/robots/mouse.xml 4 4.5 1.57079632679 mouse0" />
 
-    <param name="mouse_name" value="mouse0" />
-    <param name="cat_name" value="cat0" />
-	<node name="mouse_movement" pkg="cat_and_mouse_robots" type="mouse_movement.py" output="screen" />
-	<node name="cat_movement" pkg="cat_and_mouse_robots" type="cat_movement.py" output="screen" />
+    <group>
+	    <node pkg="stdr_robot" type="robot_handler" name="cat0" args="add $(find stdr_resources)/resources/robots/cat.xml 4 4 1.57 cat0" respawn="true" respawn_delay="5" />
+	    <node pkg="stdr_robot" type="robot_handler" name="cat1" args="add $(find stdr_resources)/resources/robots/cat.xml 7 4 1.57 cat1" respawn="true" respawn_delay="5" />
+	    <node pkg="stdr_robot" type="robot_handler" name="mouse0" args="add $(find stdr_resources)/resources/robots/mouse.xml 4 4.5 1.57 mouse0" respawn="true" respawn_delay="5" />
+	    <node pkg="stdr_robot" type="robot_handler" name="mouse1" args="add $(find stdr_resources)/resources/robots/mouse.xml 7 4.5 1.57 mouse1" respawn="true" respawn_delay="5" />
+    </group>
+
+    <group>
+	    <node name="mouse0_movement" pkg="cat_and_mouse_robots" type="mouse_movement.py" args="mouse0" output="screen"/>
+	    <node name="mouse1_movement" pkg="cat_and_mouse_robots" type="mouse_movement.py" args="mouse1" output="screen"/>
+	    <node name="cat0_movement" pkg="cat_and_mouse_robots" type="cat_movement.py" args="cat0" output="screen" />
+	    <node name="cat1_movement" pkg="cat_and_mouse_robots" type="cat_movement.py" args="cat1" output="screen" />
+    </group>
 
     <node name="cat_mouse_world" pkg="cat_mouse_world" type="cat_mouse_world" output="screen">
-        <param name="n_cats" value="1" />
-        <param name="n_mice" value="1" />
+        <param name="n_cats" value="2" />
+        <param name="n_mice" value="2" />
     </node>
 
 </launch>
