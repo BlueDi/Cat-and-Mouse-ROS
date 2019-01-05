@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 import sys
-from math import degrees, cos, sin, pi
+from math import degrees, cos, sin, pi, pow, atan
 import rospy
 import numpy as np
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry, MapMetaData
-from cat_mouse_world.msg import RobotsSpotted
+from cat_mouse_world.msg import RobotsSpotted, RobotSpotted
 from go_to_goal import move_to_goal
 
 
@@ -24,11 +24,11 @@ def odomCallback(odom_message):
 def sightCallback(sight_message):
     '''Cat Sight memory update'''
     global cat_position
-    cat_position = closest_cat(sight_message)
+    cat_position = cat_pseudo_position(sight_message)
     if cat_position == []:
-        rospy.loginfo('No cat near')
+        rospy.loginfo('No cat nearby.')
     elif 0 <= cat_position.dist < 0.1:
-        rospy.loginfo('Died')
+        rospy.loginfo('Died.')
 
 
 def map_metadataCallback(map_metadata_message):
@@ -37,10 +37,26 @@ def map_metadataCallback(map_metadata_message):
     map_metadata = map_metadata_message
 
 
-def closest_cat(sight_message):
+def cat_pseudo_position(sight_message):
+    '''
+    Using all the visible cats positions,
+    calculate a pseudo position of
+    the sum of all cat positions
+    '''
+    closest_cat = RobotSpotted()
     visible_cats = sight_message.robotsSpotted
-    if len(visible_cats) > 0:
-        closest_cat = min(visible_cats, key=lambda x: x.dist)
+    if len(visible_cats) > 1:
+        x = 0
+        y = 0
+        for cat in visible_cats:
+            cat_x = cat.dist * cos(cat.angle)
+            cat_y = cat.dist * sin(cat.angle)
+            x += cat_x
+            y += cat_y
+        x /= len(visible_cats)
+        y /= len(visible_cats)
+        closest_cat.angle = atan(x / y)
+        closest_cat.dist = sqrt(pow(x, 2) + pow(y, 2))
     return closest_cat if closest_cat.dist > 0 else []
 
 
