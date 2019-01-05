@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 
 import sys
+from math import degrees, cos, sin, pi
 import rospy
 import numpy as np
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry, MapMetaData
+from cat_mouse_world.msg import RobotsSpotted
 from go_to_goal import move_to_goal
 
 
+cat_position = []
 map_metadata = MapMetaData(resolution=0.02, width=1000, height=1000)
 robot_odom = Odometry()
 
@@ -18,10 +21,27 @@ def odomCallback(odom_message):
     robot_odom = odom_message
 
 
+def sightCallback(sight_message):
+    '''Cat Sight memory update'''
+    global cat_position
+    cat_position = closest_cat(sight_message)
+    if cat_position == []:
+        rospy.loginfo('No cat near')
+    elif 0 <= cat_position.dist < 0.1:
+        rospy.loginfo('Died')
+
+
 def map_metadataCallback(map_metadata_message):
     '''Map metadata memory update'''
     global map_metadata
     map_metadata = map_metadata_message
+
+
+def closest_cat(sight_message):
+    visible_cats = sight_message.robotsSpotted
+    if len(visible_cats) > 0:
+        closest_cat = min(visible_cats, key=lambda x: x.dist)
+    return closest_cat if closest_cat.dist > 0 else []
 
 
 def generate_random_coords():
@@ -52,12 +72,41 @@ def random_movement():
     go_to_goal(rng_x, rng_y)
 
 
+def mouse_runaway():
+    '''Moves the mouse in the oposite direction of the closest cat'''
+    global cat_position, robot_odom
+    position = robot_odom.pose.pose.position
+    x_goal = position.x + cat_position.dist * cos(cat_position.angle + pi)
+    y_goal = position.y + cat_position.dist * sin(cat_position.angle + pi)
+    go_to_goal(x_goal, y_goal)
+
+
+def mouse_roam():
+    '''Make the mouse roam the map'''
+    move(velocity_publisher, 3, 0.5, True)
+
+
+def mouse_movement():
+    '''Control the mouse movement'''
+    global mouse_position
+    saw_cat = cat_position != []
+    if saw_cat:
+        rospy.loginfo('Saw a cat! dist:%.2f angle:%.2f', cat_position.dist, cat_position.angle)
+        mouse_runaway()
+    else:
+        random_movement()
+
+
 def subscribers():
     position_topic = '/' + MOUSE_NAME + '/odom'
     rospy.Subscriber(position_topic, Odometry, odomCallback)
     
+    sight_topic = '/' + MOUSE_NAME + '/sight'
+    rospy.Subscriber(sight_topic, RobotsSpotted, sightCallback)
+    
     map_metadata_topic = '/map_metadata'
     rospy.Subscriber(map_metadata_topic, MapMetaData, map_metadataCallback)
+
 
 if __name__ == '__main__':
     try:
@@ -71,17 +120,16 @@ if __name__ == '__main__':
     try:
         rospy.init_node(MOUSE_NAME + '_movement')
         rate = rospy.Rate(10)
-        rate.sleep()
         
         cmd_vel_topic = '/' + MOUSE_NAME + '/cmd_vel'
-        velocity_publisher = rospy.Publisher(cmd_vel_topic, Twist, queue_size=10)
+        velocity_publisher = rospy.Publisher(cmd_vel_topic, Twist, queue_size=2)
         
         subscribers()        
 
-        i = 10
-        while i > 0 and not rospy.is_shutdown():
-            i -= 1
-            random_movement()
+        while not rospy.is_shutdown():
+            mouse_movement()
+
+        rospy.spin()
 
     except rospy.ROSInterruptException:
         rospy.loginfo(MOUSE_NAME + ' terminated.')
