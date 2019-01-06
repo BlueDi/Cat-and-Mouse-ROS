@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 import sys
-from math import degrees, cos, sin, pi, pow, atan
+from math import degrees, cos, sin, pi, pow, atan, sqrt
 import rospy
 import numpy as np
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry, MapMetaData
 from cat_mouse_world.msg import RobotsSpotted, RobotSpotted
 from go_to_goal import move_to_goal
+from linear_movement import move
 
 
 cat_position = []
@@ -55,6 +56,11 @@ def cat_pseudo_position(sight_message):
             y += cat_y
         x /= len(visible_cats)
         y /= len(visible_cats)
+
+        # Temporary Fix
+        if y == 0:
+            y = 0.001
+
         closest_cat.angle = atan(x / y)
         closest_cat.dist = sqrt(pow(x, 2) + pow(y, 2))
     return closest_cat if closest_cat.dist > 0 else []

@@ -17,7 +17,7 @@ mouse_position = []
 robot_odom = Odometry()
 map_metadata = MapMetaData(resolution=0.02, width=1000, height=1000)
 
-cat_linear_speed_unscaled = 125
+cat_linear_speed_unscaled = 100
 cat_linear_speed = cat_linear_speed_unscaled #will be scaled by callbacks
 cat_angular_speed = pi / 180 * 180
 
@@ -29,6 +29,8 @@ clear_distance = clear_distance_unscaled
 wall_factor = 100
 
 giveUpMilis = 1000 * 10
+
+mode = -1
 
 def map_metadataCallback(map_metadata_message):
     '''Map metadata memory update'''
@@ -89,7 +91,7 @@ def cat_movement():
     '''Control the cat movement'''
     global mouse_position, robot_odom, map_metadata, wall_factor
     global cat_linear_speed, cat_angular_speed, drift_angle
-    global slow_down_on_arrival, clear_distance
+    global slow_down_on_arrival, clear_distance, mode
 
     position = robot_odom.pose.pose.position
     
@@ -119,7 +121,9 @@ def cat_movement():
     # Move
     while distance > clear_distance and not rospy.is_shutdown() and running:
         if mouse_position != []: # Chasing
-            print("Chasing...")
+            if mode != 1:
+                rospy.loginfo("Chasing a Mouse!")
+                mode = 1
 
             position = robot_odom.pose.pose.position
 
@@ -130,7 +134,9 @@ def cat_movement():
             rate.sleep()
             startTime = now()
         else:
-            print("Roaming...")
+            if mode != 2:
+                rospy.loginfo("Now Roaming...")
+                mode = 2
 
             velocity_message, distance = move_to_goal_ex(robot_odom, x_roam, y_roam, cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival)
             velocity_publisher.publish(velocity_message)

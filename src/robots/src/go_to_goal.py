@@ -105,7 +105,7 @@ def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_sp
 
     if abs(angular_speed) < drift_angle:
         if abs(angular_speed) > 0.05:
-            velocity_message.linear.x = linear_speed * (1 - abs(angular_speed) / (2 * pi))
+            velocity_message.linear.x = linear_speed * (1 - abs(angular_speed) / drift_angle)
         else:
             velocity_message.linear.x = linear_speed        
     else:

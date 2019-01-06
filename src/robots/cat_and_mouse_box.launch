@@ -9,10 +9,10 @@
 	<include file="$(find stdr_gui)/launch/stdr_gui.launch"/>
 
     <group>
-	    <node pkg="stdr_robot" type="robot_handler" name="cat0" args="add $(find stdr_resources)/resources/robots/cat.xml 4 4 1.57 cat0" respawn="true" respawn_delay="5" />
-	    <node pkg="stdr_robot" type="robot_handler" name="cat1" args="add $(find stdr_resources)/resources/robots/cat.xml 7 4 1.57 cat1" respawn="true" respawn_delay="5" />
-	    <node pkg="stdr_robot" type="robot_handler" name="mouse0" args="add $(find stdr_resources)/resources/robots/mouse.xml 4 4.5 1.57 mouse0" respawn="true" respawn_delay="5" />
-	    <node pkg="stdr_robot" type="robot_handler" name="mouse1" args="add $(find stdr_resources)/resources/robots/mouse.xml 7 4.5 1.57 mouse1" respawn="true" respawn_delay="5" />
+	    <node pkg="stdr_robot" type="robot_handler" name="cat0" args="add $(find stdr_resources)/resources/robots/cat.xml 4 4 1.57 cat0"  />
+	    <node pkg="stdr_robot" type="robot_handler" name="cat1" args="add $(find stdr_resources)/resources/robots/cat.xml 7 4 1.57 cat1"  />
+	    <node pkg="stdr_robot" type="robot_handler" name="mouse0" args="add $(find stdr_resources)/resources/robots/mouse.xml 4 4.5 1.57 mouse0"  />
+	    <node pkg="stdr_robot" type="robot_handler" name="mouse1" args="add $(find stdr_resources)/resources/robots/mouse.xml 7 4.5 1.57 mouse1"  />
     </group>
 
     <group>
