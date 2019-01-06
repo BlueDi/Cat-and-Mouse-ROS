@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 import sys
-from math import degrees, cos, sin, pi, pow, atan, sqrt
+from math import cos, sin, pi, pow, atan, sqrt
 import rospy
 import numpy as np
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry, MapMetaData
 from cat_mouse_world.msg import RobotsSpotted, RobotSpotted
+from geometry_msgs.msg import Pose
+from coords import add_spherical_to_cart
 from go_to_goal import move_to_goal
 from linear_movement import move
 
@@ -47,22 +49,16 @@ def cat_pseudo_position(sight_message):
     closest_cat = RobotSpotted()
     visible_cats = sight_message.robotsSpotted
     if len(visible_cats) > 1:
-        x = 0
-        y = 0
+        cat_temp = Pose().position
         for cat in visible_cats:
-            cat_x = cat.dist * cos(cat.angle)
-            cat_y = cat.dist * sin(cat.angle)
-            x += cat_x
-            y += cat_y
-        x /= len(visible_cats)
-        y /= len(visible_cats)
-
-        # Temporary Fix
-        if y == 0:
-            y = 0.001
-
-        closest_cat.angle = atan(x / y)
-        closest_cat.dist = sqrt(pow(x, 2) + pow(y, 2))
+            cat_temp.x, cat_temp.y = add_spherical_to_cart(cat_temp, cat)
+        cat_temp.x /= len(visible_cats)
+        if cat_temp.y == 0:
+            closest_cat.angle = 0
+        else:
+            cat_temp.y /= len(visible_cats)
+            closest_cat.angle = atan(cat_temp.x / cat_temp.y) + pi
+        closest_cat.dist = sqrt(pow(cat_temp.x, 2) + pow(cat_temp.y, 2))
     return closest_cat if closest_cat.dist > 0 else []
 
 
@@ -84,9 +80,8 @@ def go_to_goal(x_goal, y_goal):
         velocity_message, distance = move_to_goal(robot_odom, x_goal, y_goal)
         velocity_publisher.publish(velocity_message)
         rate.sleep()
-    
-    velocity_message = Twist()
-    velocity_publisher.publish(velocity_message)
+
+    velocity_publisher.publish(Twist())
 
 
 def random_movement():
@@ -95,11 +90,11 @@ def random_movement():
 
 
 def mouse_runaway():
-    '''Moves the mouse in the oposite direction of the closest cat'''
+    '''Moves the mouse in the oposite direction of the cats'''
     global cat_position, robot_odom
+    rospy.loginfo_throttle(5, 'Running away from a cat!')
     position = robot_odom.pose.pose.position
-    x_goal = position.x + cat_position.dist * cos(cat_position.angle + pi)
-    y_goal = position.y + cat_position.dist * sin(cat_position.angle + pi)
+    x_goal, y_goal = add_spherical_to_cart(position, cat_position)
     go_to_goal(x_goal, y_goal)
 
 
@@ -113,7 +108,6 @@ def mouse_movement():
     global mouse_position
     saw_cat = cat_position != []
     if saw_cat:
-        rospy.loginfo('Saw a cat! dist:%.2f angle:%.2f', cat_position.dist, cat_position.angle)
         mouse_runaway()
     else:
         random_movement()
