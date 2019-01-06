@@ -29,9 +29,11 @@ def sightCallback(sight_message):
     global cat_position
     cat_position = cat_pseudo_position(sight_message)
     if cat_position == []:
-        rospy.loginfo_throttle(5, 'No cat nearby.')
+        str = '[%s] No cat nearby.'%MOUSE_NAME
+        rospy.loginfo_throttle(5, str)
     elif 0 <= cat_position.dist < 0.1:
-        rospy.loginfo('Died.')
+        str = '[%s] Died.'%MOUSE_NAME
+        rospy.loginfo_throttle(5, str)
 
 
 def map_metadataCallback(map_metadata_message):
@@ -92,7 +94,8 @@ def random_movement():
 def mouse_runaway():
     '''Moves the mouse in the oposite direction of the cats'''
     global cat_position, robot_odom
-    rospy.loginfo_throttle(5, 'Running away from a cat!')
+    str = '[%s] Running away from a cat!'%MOUSE_NAME
+    rospy.loginfo_throttle(5, str)
     position = robot_odom.pose.pose.position
     x_goal, y_goal = add_spherical_to_cart(position, cat_position)
     go_to_goal(x_goal, y_goal)

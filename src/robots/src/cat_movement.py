@@ -59,9 +59,11 @@ def sightCallback(sight_message):
     mouse_position = closest_mouse(sight_message)
     
     if mouse_position == []:
-        rospy.logdebug('No mouse near')
+        str = '[%s] No mouse near'%CAT_NAME
+        rospy.loginfo_throttle(5, str)
     elif 0 <= mouse_position.dist < 0.1:
-        rospy.loginfo('Caught a mouse')
+        str = '[%s] Caught a mouse'%CAT_NAME
+        rospy.loginfo_throttle(5, str)
 
 
 def noiseCallback(noise_message):
@@ -123,7 +125,8 @@ def generate_random_coords():
 def cat_chase():
     '''Moves the cat in the direction of the closest mouse'''
     global mouse_position, robot_odom
-    rospy.loginfo_throttle(5, "Chasing a Mouse!")
+    str = '[%s] Chasing a Mouse!'%CAT_NAME
+    rospy.loginfo_throttle(5, str)
     
     position = robot_odom.pose.pose.position
     x_mouse, y_mouse = add_spherical_to_cart(position, mouse_position)
@@ -133,7 +136,8 @@ def cat_chase():
 def cat_search():
     '''Moves the cat in the direction of the strongest noise'''
     global noise_position, robot_odom
-    rospy.loginfo_throttle(5, "Following a Noise!")
+    str = '[%s] Following a Noise!'%CAT_NAME
+    rospy.loginfo_throttle(5, str)
 
     position = robot_odom.pose.pose.position
     x_noise, y_noise = add_spherical_to_cart(position, noise_position)
@@ -142,7 +146,8 @@ def cat_search():
 
 def cat_roam(x, y):
     '''Moves the cat in a random direction'''
-    rospy.loginfo_throttle(5, "Roaming.")
+    str = '[%s] Roaming.'%CAT_NAME
+    rospy.loginfo_throttle(5, str)
     cat_move_to(x, y)
 
 
@@ -180,7 +185,7 @@ def cat_movement():
             rate.sleep()
             currentTime = now()
             if currentTime - startTime >= giveUpMilis:
-                rospy.logwarn("Movement timed out")
+                rospy.logwarn('[%s] Movement timed out', CAT_NAME)
                 break
     stop()
 
@@ -191,7 +196,7 @@ def now():
 
 if __name__ == '__main__':
     try:
-        CAT_NAME = rospy.get_param("cat_name")
+        CAT_NAME = rospy.get_param('cat_name')
     except KeyError:
         try:
             CAT_NAME = sys.argv[1]
