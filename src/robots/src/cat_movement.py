@@ -32,7 +32,6 @@ wall_factor = 100
 
 giveUpMilis = 1000 * 10
 
-mode = -1
 
 def map_metadataCallback(map_metadata_message):
     '''Map metadata memory update'''
@@ -46,6 +45,7 @@ def map_metadataCallback(map_metadata_message):
     cat_linear_speed = resolution * cat_linear_speed_unscaled
     clear_distance = resolution * clear_distance_unscaled
 
+
 def odomCallback(odom_message):
     '''Odometry memory update'''
     global robot_odom
@@ -57,41 +57,37 @@ def sightCallback(sight_message):
     global mouse_position, chasing
     mouse_position = closest_mouse(sight_message)
     
-    if mouse_position != []:
-        if abs(mouse_position.dist) < 0.1:
-            rospy.loginfo('Caught a mouse')
-        else:
-            chasing = True
+    if mouse_position == []:
+        rospy.logdebug('No mouse near')
+    elif 0 <= mouse_position.dist < 0.1:
+        rospy.loginfo('Caught a mouse')
+
 
 def noiseCallback(noise_message):
     '''Mouse Noise memory update'''
     global noise_position, chasing
     noise_position = closest_noise(noise_message)
 
-    if noise_position != []:
-        chasing = True
+
+def closest_mouse(sight_message):
+    visible_mice = sight_message.robotsSpotted
+    if len(visible_mice) > 0:
+        closest_mouse = min(visible_mice, key=lambda x: x.dist)
+    return closest_mouse if closest_mouse.dist > 0 else []
+
 
 def closest_noise(noise_message):
     noises = noise_message.noises
+    if len(noises) > 0:
+        closest_noise = max(noises, key=lambda x: x.volume)
+    return closest_noise if closest_noise.volume > 0 else []
 
-    closest = None
-
-    for noise in noises:
-        if noise.volume > 0:
-            if closest == None or noise.volume > closest.volume:
-                closest = noise
-
-    return closest if closest != None else []
 
 def stop():
     global mouse_position
     mouse_position = []
+    velocity_publisher.publish(Twist())    
 
-    msg = Twist()
-    msg.linear.x = 0
-    msg.angular.z = 0
-
-    velocity_publisher.publish(msg)    
 
 def subscribers():
     position_topic = '/' + CAT_NAME + '/odom'
@@ -99,62 +95,47 @@ def subscribers():
 
     sight_topic = '/' + CAT_NAME + '/sight'
     rospy.Subscriber(sight_topic, RobotsSpotted, sightCallback)
+    
+    noise_topic = '/' + CAT_NAME + '/noise'
+    rospy.Subscriber(noise_topic, Noises, noiseCallback)
 
     map_metadata_topic = '/map_metadata'
     rospy.Subscriber(map_metadata_topic, MapMetaData, map_metadataCallback)
 
-    noise_topic = '/' + CAT_NAME + '/noise'
-    rospy.Subscriber(noise_topic, Noises, noiseCallback)
 
-def closest_mouse(sight_message):
-    visible_mice = sight_message.robotsSpotted
+def generate_random_coords(position):
+    '''Generate random coords inside the walls'''
+    global map_metadata
+    x_roam = position.x
+    y_roam = position.y
+    resolution = map_metadata.resolution
+    f = wall_factor * resolution
+    width = map_metadata.width * resolution - f
+    height = map_metadata.height * resolution - f
+    while getDistance(position.x, position.y, x_roam, y_roam) < f:
+        x_roam = np.random.randint(1, high=width)
+        y_roam = np.random.randint(1, high=height)
+    return x_roam, y_roam
 
-    closest = None
-
-    for mouse in visible_mice:
-        if mouse.dist > 0:
-            if closest == None or mouse.dist < closest.dist:
-                closest = mouse
-
-    return closest if closest != None else []
 
 def cat_movement():
     '''Control the cat movement'''
     global mouse_position, robot_odom, map_metadata, wall_factor
     global cat_linear_speed, cat_angular_speed, drift_angle
-    global slow_down_on_arrival, clear_distance, mode
+    global slow_down_on_arrival, clear_distance
 
     position = robot_odom.pose.pose.position
-    
-    # Set Roam Destiny
-
-    resolution = map_metadata.resolution
-    f = wall_factor * resolution 
-
-    use_width = map_metadata.width * resolution - f
-    use_height = map_metadata.height * resolution - f
-
-    x_roam = np.random.randint(f, high=use_width)
-    y_roam = np.random.randint(f, high=use_height)
-
-    tries = 10
-    while getDistance(position.x, position.y, x_roam, y_roam) < f and tries > 0:
-        x_roam = np.random.randint(f, high=use_width)
-        y_roam = np.random.randint(f, high=use_height)
-        tries -= 1
+    x_roam, y_roam = generate_random_coords(position)
     
     distance = map_metadata.width + map_metadata.height # Just a number to high
 
     # Give up on movement after a set ammount of time, avoid getting stuck
     startTime = now()
-    running = True
 
     # Move
-    while distance > clear_distance and not rospy.is_shutdown() and running:
-        if mouse_position != []: # Chasing Sight
-            if mode != 1:
-                rospy.loginfo("Chasing a Mouse!")
-                mode = 1
+    while distance > clear_distance and not rospy.is_shutdown():
+        if mouse_position != []:
+            rospy.loginfo_throttle(5, "Chasing a Mouse!")
 
             position = robot_odom.pose.pose.position
 
@@ -164,10 +145,8 @@ def cat_movement():
             velocity_publisher.publish(velocity_message)
             rate.sleep()
             startTime = now()
-        elif noise_position != []: # Chasing Noise
-            if mode != 3:
-                rospy.loginfo("Following some Noise!")
-                mode = 3
+        elif noise_position != []:
+            rospy.loginfo_throttle(5, "Following a Noise!")
 
             position = robot_odom.pose.pose.position
 
@@ -178,9 +157,7 @@ def cat_movement():
             rate.sleep()
             startTime = now()
         else:
-            if mode != 2:
-                rospy.loginfo("Now Roaming...")
-                mode = 2
+            rospy.loginfo_throttle(5, "Roaming")
 
             velocity_message, distance = move_to_goal_ex(robot_odom, x_roam, y_roam, cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival)
             velocity_publisher.publish(velocity_message)
@@ -188,12 +165,14 @@ def cat_movement():
 
             currentTime = now()
             if currentTime - startTime >= giveUpMilis:
-                running = False
-                rospy.loginfo("Movement timed out")
+                rospy.logwarn("Movement timed out")
+                break
     stop()
+
 
 def now():
     return int(round(time.time() * 1000))
+
 
 if __name__ == '__main__':
     try:
@@ -219,5 +198,5 @@ if __name__ == '__main__':
         rospy.spin()
 
     except rospy.ROSInterruptException:
-        rospy.loginfo(CAT_NAME + ' terminated.')
+        rospy.logwarn(CAT_NAME + ' terminated.')
 

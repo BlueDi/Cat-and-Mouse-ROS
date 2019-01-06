@@ -27,7 +27,7 @@ def sightCallback(sight_message):
     global cat_position
     cat_position = cat_pseudo_position(sight_message)
     if cat_position == []:
-        rospy.loginfo('No cat nearby.')
+        rospy.loginfo_throttle(5, 'No cat nearby.')
     elif 0 <= cat_position.dist < 0.1:
         rospy.loginfo('Died.')
 
@@ -154,5 +154,5 @@ if __name__ == '__main__':
         rospy.spin()
 
     except rospy.ROSInterruptException:
-        rospy.loginfo(MOUSE_NAME + ' terminated.')
+        rospy.logwarn(MOUSE_NAME + ' terminated.')
 
