@@ -11,16 +11,24 @@ MIN_DISTANCE = 0.2
 robot_odom = Odometry()
 
 class LaserData:
-    def __init__(self, firstAngle, angleIncrement, ranges, proximityThrestold):
+    def __init__(self, ranges, angle_min, angle_increment, proximity_threstold):
         self.ranges = ranges
-        self.proximityThrestold = proximityThrestold
-        self.angles = []
+        self.count = len(ranges)
+        self.angle_min = angle_min
+        self.angle_increment = angle_increment
+        self.proximity_threstold = proximity_threstold
 
-        for i in range(0, len(ranges)):
-            angle = firstAngle + (i * angleIncrement)
-            if angle > 2 * pi:
-                angle -= 2 * pi
-            self.angles.append(angle)
+    def getAngle(self, i):
+        return self.angle_min + (i * self.angle_increment)
+
+    def getRange(self, i):
+        return self.ranges[i]
+
+    def getCount(self):
+        return self.count
+
+    def isBlocked(self, i):
+        return self.ranges[i] <= self.proximity_threstold
 
 def odomCallback(odom_message):
     '''Odometry memory update'''

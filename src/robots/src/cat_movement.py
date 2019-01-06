@@ -35,22 +35,16 @@ wall_factor = 100
 giveUpMilis = 1000 * 10
 
 laser_proximity_threstold = 0.1 # How far should the robot stay from the walls
-laser_first_angle = -2 + (pi / 2) + (2 * pi) # The first angle covered by the lasers, in normalized angles [0, 2pi]
 laser_data = None
 
 def laserCallback(data):
-    global laser_proximity_threstold, laser_first_angle, laser_data
+    global laser_proximity_threstold, laser_data
     laser_data = LaserData(
-        laser_first_angle, 
-        data.angle_increment, 
-        data.ranges, 
+        data.ranges,
+        data.angle_min,
+        data.angle_increment,
         laser_proximity_threstold
     )
-
-    print("Ranges: ", laser_data.ranges)
-    print("Angles: ", laser_data.angles)
-    print("PT: ", laser_data.proximityThrestold)
-
 
 def map_metadataCallback(map_metadata_message):
     '''Map metadata memory update'''
@@ -111,7 +105,7 @@ def stop():
 
 
 def subscribers():
-    laser_topic = '/' + CAT_NAME + '/laser_0'
+    laser_topic = '/' + CAT_NAME + '/laser_1'
     rospy.Subscriber(laser_topic, LaserScan, laserCallback)
 
     position_topic = '/' + CAT_NAME + '/odom'
