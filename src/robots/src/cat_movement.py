@@ -83,9 +83,15 @@ def subscribers():
 
 def closest_mouse(sight_message):
     visible_mice = sight_message.robotsSpotted
-    if len(visible_mice) > 0:
-        closest_mouse = min(visible_mice, key=lambda x: x.dist)
-    return closest_mouse if closest_mouse.dist > 0 else []
+
+    closest = None
+
+    for mouse in visible_mice:
+        if mouse.dist > 0:
+            if closest == None or mouse.dist < closest.dist:
+                closest = mouse
+
+    return closest if closest != None else []
 
 def cat_movement():
     '''Control the cat movement'''
@@ -145,7 +151,7 @@ def cat_movement():
             currentTime = now()
             if currentTime - startTime >= giveUpMilis:
                 running = False
-                print("Movement timed out")
+                rospy.loginfo("Movement timed out")
     stop()
 
 def now():
