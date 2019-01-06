@@ -6,6 +6,8 @@
 	
 	<node pkg="tf" type="static_transform_publisher" name="world2map" args="0 0 0 0 0 0  world map 100" />
 	
+	<include file="$(find stdr_gui)/launch/stdr_gui.launch"/>
+
     <group>
 	    <node pkg="stdr_robot" type="robot_handler" name="cat0" args="add $(find stdr_resources)/resources/robots/cat.xml 4 4 1.57 cat0" respawn="true" respawn_delay="5" />
 	    <node pkg="stdr_robot" type="robot_handler" name="cat1" args="add $(find stdr_resources)/resources/robots/cat.xml 7 4 1.57 cat1" respawn="true" respawn_delay="5" />
@@ -19,8 +21,6 @@
 	    <node name="cat0_movement" pkg="cat_and_mouse_robots" type="cat_movement.py" args="cat0" output="screen" />
 	    <node name="cat1_movement" pkg="cat_and_mouse_robots" type="cat_movement.py" args="cat1" output="screen" />
     </group>
-
-	<include file="$(find stdr_gui)/launch/stdr_gui.launch"/>
 
     <node name="cat_mouse_world" pkg="cat_mouse_world" type="cat_mouse_world" output="screen">
         <param name="n_cats" value="2" />
