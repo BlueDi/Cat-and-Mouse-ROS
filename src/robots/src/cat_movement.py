@@ -7,6 +7,7 @@ import numpy as np
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry, MapMetaData
 from cat_mouse_world.msg import RobotsSpotted, Noises
+from coords import *
 from go_to_goal import move_to_goal_ex, getDistance
 from angular_movement import *
 from linear_movement import *
@@ -103,9 +104,10 @@ def subscribers():
     rospy.Subscriber(map_metadata_topic, MapMetaData, map_metadataCallback)
 
 
-def generate_random_coords(position):
+def generate_random_coords():
     '''Generate random coords inside the walls'''
-    global map_metadata
+    global map_metadata, robot_odom
+    position = robot_odom.pose.pose.position
     x_roam = position.x
     y_roam = position.y
     resolution = map_metadata.resolution
@@ -118,51 +120,64 @@ def generate_random_coords(position):
     return x_roam, y_roam
 
 
+def cat_chase():
+    '''Moves the cat in the direction of the closest mouse'''
+    global mouse_position, robot_odom
+    rospy.loginfo_throttle(5, "Chasing a Mouse!")
+    
+    position = robot_odom.pose.pose.position
+    x_mouse, y_mouse = add_spherical_to_cart(position, mouse_position)
+    cat_move_to(x_mouse, y_mouse)
+
+
+def cat_search():
+    '''Moves the cat in the direction of the strongest noise'''
+    global noise_position, robot_odom
+    rospy.loginfo_throttle(5, "Following a Noise!")
+
+    position = robot_odom.pose.pose.position
+    x_noise, y_noise = add_spherical_to_cart(position, noise_position)
+    cat_move_to(x_noise, y_noise)
+
+
+def cat_roam(x, y):
+    '''Moves the cat in a random direction'''
+    rospy.loginfo_throttle(5, "Roaming.")
+    cat_move_to(x, y)
+
+
+def cat_move_to(x, y):
+    '''Moves the cat in the direction of (x,y)'''
+    global robot_odom
+    global cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival
+    velocity_message, distance = move_to_goal_ex(robot_odom, x, y, cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival)
+    velocity_publisher.publish(velocity_message)
+
+
 def cat_movement():
     '''Control the cat movement'''
     global mouse_position, robot_odom, map_metadata, wall_factor
-    global cat_linear_speed, cat_angular_speed, drift_angle
-    global slow_down_on_arrival, clear_distance
+    global clear_distance
 
-    position = robot_odom.pose.pose.position
-    x_roam, y_roam = generate_random_coords(position)
-    
-    distance = map_metadata.width + map_metadata.height # Just a number to high
+    x_roam, y_roam = generate_random_coords()
 
     # Give up on movement after a set ammount of time, avoid getting stuck
     startTime = now()
 
     # Move
+    distance = clear_distance + 1
     while distance > clear_distance and not rospy.is_shutdown():
         if mouse_position != []:
-            rospy.loginfo_throttle(5, "Chasing a Mouse!")
-
-            position = robot_odom.pose.pose.position
-
-            x_mouse = position.x + mouse_position.dist * cos(mouse_position.angle)
-            y_mouse = position.y + mouse_position.dist * sin(mouse_position.angle)
-            velocity_message, distance = move_to_goal_ex(robot_odom, x_mouse, y_mouse, cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival)
-            velocity_publisher.publish(velocity_message)
+            cat_chase()
             rate.sleep()
             startTime = now()
         elif noise_position != []:
-            rospy.loginfo_throttle(5, "Following a Noise!")
-
-            position = robot_odom.pose.pose.position
-
-            x_noise = position.x + noise_position.volume  * cos(noise_position.angle)
-            y_noise = position.y + noise_position.volume * sin(noise_position.angle)
-            velocity_message, distance = move_to_goal_ex(robot_odom, x_noise, y_noise, cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival)
-            velocity_publisher.publish(velocity_message)
+            cat_search()
             rate.sleep()
             startTime = now()
         else:
-            rospy.loginfo_throttle(5, "Roaming")
-
-            velocity_message, distance = move_to_goal_ex(robot_odom, x_roam, y_roam, cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival)
-            velocity_publisher.publish(velocity_message)
+            cat_roam(x_roam, y_roam)
             rate.sleep()
-
             currentTime = now()
             if currentTime - startTime >= giveUpMilis:
                 rospy.logwarn("Movement timed out")
