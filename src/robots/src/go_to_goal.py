@@ -76,10 +76,7 @@ def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_sp
     bot_x = position.x
     bot_y = position.y
     
-    if(yaw >= 0):
-        bot_angle = yaw
-    else:
-        bot_angle = 2 * pi + yaw
+    bot_angle = normalizeAngle(yaw)
 
     linear_speed = bot_linear_speed
     angular_speed = bot_angular_speed
@@ -89,28 +86,8 @@ def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_sp
         linear_speed = distance
 
     angle_aux = atan2(goal_y - position.y, goal_x - position.x)
-    if angle_aux >= 0:
-        target_angle = angle_aux
-    else:
-        target_angle = 2 * pi + angle_aux
-
-    angle_diff = 0
-    if target_angle > bot_angle:
-        s1 = abs(target_angle - bot_angle)
-        s2 = abs(bot_angle - (target_angle - 2 * pi))
-
-        if s1 <= s2:
-            angle_diff = s1
-        else:
-            angle_diff = -s2
-    else:
-        s1 = abs(bot_angle - target_angle)
-        s2 = abs(target_angle - (bot_angle - 2 * pi))
-
-        if s1 <= s2:
-            angle_diff = -s1
-        else:
-            angle_diff = s2
+    target_angle = normalizeAngle(angle_aux)
+    angle_diff = getAngleDifference(target_angle, bot_angle)
     
     if abs(angle_diff) > angular_speed:
         if angle_diff > 0:
@@ -136,6 +113,36 @@ def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_sp
 
     return velocity_message, distance
 
+def normalizeAngle(angle):
+    a = angle
+    twopi = 2 * pi
+    
+    if a > twopi:
+        a -= twopi
+    elif a < 0:
+        a += twopi
+
+    return a
+
+def getAngleDifference(target, origin):
+    angle_diff = 0
+    if target > origin:
+        s1 = abs(target - origin)
+        s2 = abs(origin - (target - 2 * pi))
+
+        if s1 <= s2:
+            angle_diff = s1
+        else:
+            angle_diff = -s2
+    else:
+        s1 = abs(origin - target)
+        s2 = abs(target - (origin - 2 * pi))
+
+        if s1 <= s2:
+            angle_diff = -s1
+        else:
+            angle_diff = s2
+    return angle_diff
 
 if __name__ == '__main__':
     try:
