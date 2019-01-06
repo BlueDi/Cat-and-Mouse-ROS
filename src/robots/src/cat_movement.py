@@ -55,7 +55,7 @@ def odomCallback(odom_message):
 
 def sightCallback(sight_message):
     '''Mouse Sight memory update'''
-    global mouse_position, chasing
+    global mouse_position
     mouse_position = closest_mouse(sight_message)
     
     if mouse_position == []:
@@ -68,7 +68,7 @@ def sightCallback(sight_message):
 
 def noiseCallback(noise_message):
     '''Mouse Noise memory update'''
-    global noise_position, chasing
+    global noise_position
     noise_position = closest_noise(noise_message)
 
 
