@@ -13,7 +13,7 @@
 
     <param name="mouse_name" value="mouse0" />
     <param name="cat_name" value="cat0" />
-	<node name="mouse_movement" pkg="cat_and_mouse_robots" type="test_mouse_movement.py" output="screen" />
+	<node name="mouse_movement" pkg="cat_and_mouse_robots" type="mouse_movement.py" output="screen" />
 	<node name="cat_movement" pkg="cat_and_mouse_robots" type="cat_movement.py" output="screen" />
 
     <node name="cat_mouse_world" pkg="cat_mouse_world" type="cat_mouse_world" output="screen">

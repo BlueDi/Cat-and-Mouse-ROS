@@ -12,6 +12,7 @@ from coords import add_spherical_to_cart
 from go_to_goal import move_to_goal_ex, getDistance
 from angular_movement import *
 from linear_movement import *
+from sensor_msgs.msg import LaserScan
 
 
 mouse_position = []
@@ -33,6 +34,8 @@ wall_factor = 100
 
 giveUpMilis = 1000 * 10
 
+def laserCallback(data):
+    pass
 
 def map_metadataCallback(map_metadata_message):
     '''Map metadata memory update'''
@@ -93,6 +96,9 @@ def stop():
 
 
 def subscribers():
+    laser_topic = '/' + CAT_NAME + '/laser_1'
+    rospy.Subscriber(laser_topic, LaserScan, laserCallback)
+
     position_topic = '/' + CAT_NAME + '/odom'
     rospy.Subscriber(position_topic, Odometry, odomCallback)
 
