@@ -9,7 +9,7 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry, MapMetaData
 from cat_mouse_world.msg import RobotsSpotted, Noises
 from coords import add_spherical_to_cart
-from go_to_goal import move_to_goal_ex, getDistance
+from go_to_goal import move_to_goal_ex, getDistance, LaserData
 from angular_movement import *
 from linear_movement import *
 from sensor_msgs.msg import LaserScan
@@ -34,8 +34,23 @@ wall_factor = 100
 
 giveUpMilis = 1000 * 10
 
+laser_proximity_threstold = 0.1 # How far should the robot stay from the walls
+laser_first_angle = -2 + (pi / 2) + (2 * pi) # The first angle covered by the lasers, in normalized angles [0, 2pi]
+laser_data = None
+
 def laserCallback(data):
-    pass
+    global laser_proximity_threstold, laser_first_angle, laser_data
+    laser_data = LaserData(
+        laser_first_angle, 
+        data.angle_increment, 
+        data.ranges, 
+        laser_proximity_threstold
+    )
+
+    print("Ranges: ", laser_data.ranges)
+    print("Angles: ", laser_data.angles)
+    print("PT: ", laser_data.proximityThrestold)
+
 
 def map_metadataCallback(map_metadata_message):
     '''Map metadata memory update'''
@@ -96,7 +111,7 @@ def stop():
 
 
 def subscribers():
-    laser_topic = '/' + CAT_NAME + '/laser_1'
+    laser_topic = '/' + CAT_NAME + '/laser_0'
     rospy.Subscriber(laser_topic, LaserScan, laserCallback)
 
     position_topic = '/' + CAT_NAME + '/odom'
@@ -161,7 +176,7 @@ def cat_move_to(x, y):
     '''Moves the cat in the direction of (x,y)'''
     global robot_odom
     global cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival
-    velocity_message, distance = move_to_goal_ex(robot_odom, x, y, cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival)
+    velocity_message, distance = move_to_goal_ex(robot_odom, x, y, cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival, laser_data)
     velocity_publisher.publish(velocity_message)
 
 

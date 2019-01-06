@@ -10,6 +10,17 @@ from tf.transformations import euler_from_quaternion
 MIN_DISTANCE = 0.2
 robot_odom = Odometry()
 
+class LaserData:
+    def __init__(self, firstAngle, angleIncrement, ranges, proximityThrestold):
+        self.ranges = ranges
+        self.proximityThrestold = proximityThrestold
+        self.angles = []
+
+        for i in range(0, len(ranges)):
+            angle = firstAngle + (i * angleIncrement)
+            if angle > 2 * pi:
+                angle -= 2 * pi
+            self.angles.append(angle)
 
 def odomCallback(odom_message):
     '''Odometry memory update'''
@@ -33,17 +44,20 @@ def go_to_goal(velocity_publisher, robot_odom, x_goal, y_goal):
 
 
 def move_to_goal(robot_odom, x_goal, y_goal):
+    return move_to_goal_laser(robot_odom, x_goal, y_goal, None)
+
+def move_to_goal_laser(robot_odom, x_goal, y_goal, lasers):
     position = robot_odom.pose.pose.position
     distance = abs(getDistance(x_goal, y_goal, position.x, position.y))
     linear_speed = distance * 0.5 #Proportional Controller
     k_angular = 4.0
     drift_angle = pi / 180 * 30
 
-    velocity_message, distance = move_to_goal_ex(robot_odom, x_goal, y_goal, linear_speed, k_angular, drift_angle, True)
+    velocity_message, distance = move_to_goal_ex(robot_odom, x_goal, y_goal, linear_speed, k_angular, drift_angle, True, lasers)
 
     return velocity_message, distance
 
-def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_speed, drift_angle, brake):
+def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_speed, drift_angle, brake, lasers):
     velocity_message = Twist()
     position = robot_odom.pose.pose.position
 
