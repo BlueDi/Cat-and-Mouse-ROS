@@ -6,7 +6,7 @@ import rospy
 import numpy as np
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry, MapMetaData
-from cat_mouse_world.msg import RobotsSpotted
+from cat_mouse_world.msg import RobotsSpotted, Noises
 from go_to_goal import move_to_goal_ex, getDistance
 from angular_movement import *
 from linear_movement import *
@@ -14,6 +14,8 @@ import time
 
 
 mouse_position = []
+noise_position = []
+
 robot_odom = Odometry()
 map_metadata = MapMetaData(resolution=0.02, width=1000, height=1000)
 
@@ -61,6 +63,26 @@ def sightCallback(sight_message):
         else:
             chasing = True
 
+def noiseCallback(noise_message):
+    '''Mouse Noise memory update'''
+    global noise_position, chasing
+    noise_position = closest_noise(noise_message)
+
+    if noise_position != []:
+        chasing = True
+
+def closest_noise(noise_message):
+    noises = noise_message.noises
+
+    closest = None
+
+    for noise in noises:
+        if noise.volume > 0:
+            if closest == None or noise.volume > closest.volume:
+                closest = noise
+
+    return closest if closest != None else []
+
 def stop():
     global mouse_position
     mouse_position = []
@@ -80,6 +102,9 @@ def subscribers():
 
     map_metadata_topic = '/map_metadata'
     rospy.Subscriber(map_metadata_topic, MapMetaData, map_metadataCallback)
+
+    noise_topic = '/' + CAT_NAME + '/noise'
+    rospy.Subscriber(noise_topic, Noises, noiseCallback)
 
 def closest_mouse(sight_message):
     visible_mice = sight_message.robotsSpotted
@@ -126,7 +151,7 @@ def cat_movement():
 
     # Move
     while distance > clear_distance and not rospy.is_shutdown() and running:
-        if mouse_position != []: # Chasing
+        if mouse_position != []: # Chasing Sight
             if mode != 1:
                 rospy.loginfo("Chasing a Mouse!")
                 mode = 1
@@ -136,6 +161,19 @@ def cat_movement():
             x_mouse = position.x + mouse_position.dist * cos(mouse_position.angle)
             y_mouse = position.y + mouse_position.dist * sin(mouse_position.angle)
             velocity_message, distance = move_to_goal_ex(robot_odom, x_mouse, y_mouse, cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival)
+            velocity_publisher.publish(velocity_message)
+            rate.sleep()
+            startTime = now()
+        elif noise_position != []: # Chasing Noise
+            if mode != 3:
+                rospy.loginfo("Following some Noise!")
+                mode = 3
+
+            position = robot_odom.pose.pose.position
+
+            x_noise = position.x + noise_position.volume  * cos(noise_position.angle)
+            y_noise = position.y + noise_position.volume * sin(noise_position.angle)
+            velocity_message, distance = move_to_goal_ex(robot_odom, x_noise, y_noise, cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival)
             velocity_publisher.publish(velocity_message)
             rate.sleep()
             startTime = now()
