@@ -189,11 +189,13 @@ def cat_movement():
 
     # Move
     distance = clear_distance + 1
+    saw_mouse = mouse_position != []
+    hear_mouse = noise_position != []
     while distance > clear_distance and not rospy.is_shutdown():
-        if mouse_position != []:
+        if saw_mouse:
             cat_chase()
             startTime = now()
-        elif noise_position != []:
+        elif hear_mouse:
             cat_search()
             startTime = now()
         else:
