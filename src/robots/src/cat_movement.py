@@ -178,7 +178,7 @@ def cat_move_to(x, y):
 
 def cat_movement():
     '''Control the cat movement'''
-    global mouse_position, robot_odom, map_metadata, wall_factor
+    global mouse_position, noise_position, robot_odom, map_metadata, wall_factor
     global clear_distance
 
     x_roam, y_roam = generate_random_coords()
@@ -188,9 +188,11 @@ def cat_movement():
 
     # Move
     distance = clear_distance + 1
-    saw_mouse = mouse_position != []
-    heard_mouse = noise_position != []
+
     while distance > clear_distance and not rospy.is_shutdown():
+        saw_mouse = mouse_position != []
+        heard_mouse = noise_position != []
+
         if saw_mouse:
             cat_chase()
             startTime = now()

@@ -171,6 +171,8 @@ def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_sp
         velocity_message.linear.x = 0
     velocity_message.angular.z = angular_speed
 
+    if blocked:
+        distance = linear_speed
     return velocity_message, distance, blocked
 
 def normalizeAngle(angle):
