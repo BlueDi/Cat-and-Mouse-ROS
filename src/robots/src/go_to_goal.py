@@ -46,7 +46,8 @@ def go_to_goal(velocity_publisher, robot_odom, x_goal, y_goal):
 
 
 def move_to_goal(robot_odom, x_goal, y_goal):
-    return move_to_goal_laser(robot_odom, x_goal, y_goal, None, False)
+    velocity_message, distance, _ = move_to_goal_laser(robot_odom, x_goal, y_goal, None, False)
+    return velocity_message, distance
 
 def move_to_goal_laser(robot_odom, x_goal, y_goal, lasers, avoiding_wall):
     position = robot_odom.pose.pose.position
@@ -55,9 +56,9 @@ def move_to_goal_laser(robot_odom, x_goal, y_goal, lasers, avoiding_wall):
     k_angular = 4.0
     drift_angle = pi / 180 * 30
 
-    velocity_message, distance, _ = move_to_goal_ex(robot_odom, x_goal, y_goal, linear_speed, k_angular, drift_angle, True, lasers, avoiding_wall)
+    velocity_message, distance, avoiding_wall = move_to_goal_ex(robot_odom, x_goal, y_goal, linear_speed, k_angular, drift_angle, True, lasers, avoiding_wall)
 
-    return velocity_message, distance
+    return velocity_message, distance, avoiding_wall
 
 def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_speed, driftang, brake, lasers, avoiding_wall):
     velocity_message = Twist()

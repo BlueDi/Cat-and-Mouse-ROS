@@ -9,14 +9,26 @@ from nav_msgs.msg import Odometry, MapMetaData
 from cat_mouse_world.msg import RobotsSpotted, RobotSpotted
 from geometry_msgs.msg import Pose
 from coords import add_spherical_to_cart
-from go_to_goal import move_to_goal
+from go_to_goal import move_to_goal_laser, LaserData
 from linear_movement import move
-
+from sensor_msgs.msg import LaserScan
 
 cat_position = []
 map_metadata = MapMetaData(resolution=0.02, width=1000, height=1000)
 robot_odom = Odometry()
 
+avoiding_wall = False
+laser_proximity_threstold = 1.0 # How far should the robot stay from the walls
+laser_data = None
+
+def laserCallback(data):
+    global laser_proximity_threstold, laser_data
+    laser_data = LaserData(
+        data.ranges,
+        data.angle_min,
+        data.angle_increment,
+        laser_proximity_threstold
+    )
 
 def odomCallback(odom_message):
     '''Odometry memory update'''
@@ -76,10 +88,10 @@ def generate_random_coords():
 
 def go_to_goal(x_goal, y_goal):
     '''PID Controller'''
-    global robot_odom
+    global robot_odom, avoiding_wall
     distance = 0.2 + 1
     while distance > 0.2 and not rospy.is_shutdown():
-        velocity_message, distance = move_to_goal(robot_odom, x_goal, y_goal)
+        velocity_message, distance, avoiding_wall = move_to_goal_laser(robot_odom, x_goal, y_goal, laser_data, avoiding_wall)
         velocity_publisher.publish(velocity_message)
         rate.sleep()
 
@@ -117,6 +129,9 @@ def mouse_movement():
 
 
 def subscribers():
+    laser_topic = '/' + MOUSE_NAME + '/laser_0'
+    rospy.Subscriber(laser_topic, LaserScan, laserCallback)
+
     position_topic = '/' + MOUSE_NAME + '/odom'
     rospy.Subscriber(position_topic, Odometry, odomCallback)
     
