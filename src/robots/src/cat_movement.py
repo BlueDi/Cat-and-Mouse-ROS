@@ -192,15 +192,12 @@ def cat_movement():
     while distance > clear_distance and not rospy.is_shutdown():
         if mouse_position != []:
             cat_chase()
-            rate.sleep()
             startTime = now()
         elif noise_position != []:
             cat_search()
-            rate.sleep()
             startTime = now()
         else:
             cat_roam(x_roam, y_roam)
-            rate.sleep()
             currentTime = now()
             if currentTime - startTime >= giveUpMilis:
                 rospy.logwarn('[%s] Movement timed out', CAT_NAME)
