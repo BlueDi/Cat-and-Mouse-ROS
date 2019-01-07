@@ -24,12 +24,6 @@ class LaserData:
     def getRange(self, i):
         return self.ranges[i]
 
-    def getCount(self):
-        return self.count
-
-    def isBlocked(self, i):
-        return self.ranges[i] <= self.proximity_threstold
-
 def odomCallback(odom_message):
     '''Odometry memory update'''
     global robot_odom
@@ -52,20 +46,20 @@ def go_to_goal(velocity_publisher, robot_odom, x_goal, y_goal):
 
 
 def move_to_goal(robot_odom, x_goal, y_goal):
-    return move_to_goal_laser(robot_odom, x_goal, y_goal, None)
+    return move_to_goal_laser(robot_odom, x_goal, y_goal, None, False)
 
-def move_to_goal_laser(robot_odom, x_goal, y_goal, lasers):
+def move_to_goal_laser(robot_odom, x_goal, y_goal, lasers, avoiding_wall):
     position = robot_odom.pose.pose.position
     distance = abs(getDistance(x_goal, y_goal, position.x, position.y))
     linear_speed = distance * 0.5 #Proportional Controller
     k_angular = 4.0
     drift_angle = pi / 180 * 30
 
-    velocity_message, distance = move_to_goal_ex(robot_odom, x_goal, y_goal, linear_speed, k_angular, drift_angle, True, lasers)
+    velocity_message, distance, _ = move_to_goal_ex(robot_odom, x_goal, y_goal, linear_speed, k_angular, drift_angle, True, lasers, avoiding_wall)
 
     return velocity_message, distance
 
-def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_speed, drift_angle, brake, lasers):
+def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_speed, driftang, brake, lasers, avoiding_wall):
     velocity_message = Twist()
     position = robot_odom.pose.pose.position
 
@@ -76,6 +70,8 @@ def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_sp
     bot_x = position.x
     bot_y = position.y
     
+    drift_angle = driftang
+
     bot_angle = normalizeAngle(yaw)
 
     linear_speed = bot_linear_speed
@@ -87,8 +83,71 @@ def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_sp
 
     angle_aux = atan2(goal_y - position.y, goal_x - position.x)
     target_angle = normalizeAngle(angle_aux)
-    angle_diff = getAngleDifference(target_angle, bot_angle)
+    angle_diff = getAngleDifference(target_angle, bot_angle) if not avoiding_wall else 0
     
+    # Laser -------------------------------------
+    blocked = False
+    if lasers != None: # Consider laser data if it exists
+        dodge = pi / 180 * 30
+        deadzone = pi / 180 * 20
+        lt = -dodge
+        gt = dodge
+        dlt = -deadzone
+        dgt = deadzone
+        nonBlocked = []
+        front_range = []
+
+        # Determine if there's a wall in the path of the robot
+        for i in range(0, lasers.count):
+            r = lasers.getRange(i) # Range
+            a = lasers.getAngle(i) # Angle
+            b = r < lasers.proximity_threstold # Blocked
+
+            if not b and (a < dlt or a > dgt) and r > lasers.proximity_threstold * 1.1 : # Collected non blocked angles
+                nonBlocked.append((i, a, r))
+
+            if a >= dlt and a <= dgt and r != float('Inf'):
+                front_range.append(r)
+
+            if a >= lt and a <= gt and b:
+                blocked = True
+
+        # If there's a wall in front of the robot then
+        if blocked:
+            # Find the least blocked half
+            nonBlocked.sort(key=lambda tuple: tuple[0], reverse=False)
+
+            front_range_avg = sum(front_range) / len(front_range) if len(front_range) > 0 else lasers.proximity_threstold
+
+            left_half = nonBlocked[:len(nonBlocked)//2][2]
+            right_half = nonBlocked[len(nonBlocked)//2:][2]
+
+            right_avg = sum(right_half) / len(right_half)
+            left_avg = sum(left_half) / len(left_half)
+
+            right = right_avg < left_avg
+
+            # Pick the first item from the best half
+            middle = len(nonBlocked) / 2
+
+            nonBlocked.sort(key=lambda tuple: tuple[2], reverse=True)
+            nonBlocked.sort(key=lambda tuple: abs(tuple[1]), reverse=False)
+
+            langle = 0
+            for tup in nonBlocked:
+                if (right and tup[0] <= middle) or (not right and tup[0] >= middle):
+                    langle = tup[1]
+                    break
+
+            target_angle = normalizeAngle(bot_angle + langle)
+
+            angle_diff = getAngleDifference(target_angle, bot_angle)
+
+            drift_angle *= (front_range_avg / lasers.proximity_threstold)
+            linear_speed *= (front_range_avg / lasers.proximity_threstold)
+
+    # Laser -------------------------------------
+
     if abs(angle_diff) > angular_speed:
         if angle_diff > 0:
             angular_speed = angular_speed
@@ -111,7 +170,7 @@ def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_sp
         velocity_message.linear.x = 0
     velocity_message.angular.z = angular_speed
 
-    return velocity_message, distance
+    return velocity_message, distance, blocked
 
 def normalizeAngle(angle):
     a = angle

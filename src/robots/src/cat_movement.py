@@ -34,8 +34,10 @@ wall_factor = 100
 
 giveUpMilis = 1000 * 10
 
-laser_proximity_threstold = 0.1 # How far should the robot stay from the walls
+laser_proximity_threstold = 1.5 # How far should the robot stay from the walls
 laser_data = None
+
+avoiding_wall = False
 
 def laserCallback(data):
     global laser_proximity_threstold, laser_data
@@ -170,7 +172,8 @@ def cat_move_to(x, y):
     '''Moves the cat in the direction of (x,y)'''
     global robot_odom
     global cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival
-    velocity_message, distance = move_to_goal_ex(robot_odom, x, y, cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival, laser_data)
+    global avoiding_wall
+    velocity_message, distance, avoiding_wall = move_to_goal_ex(robot_odom, x, y, cat_linear_speed, cat_angular_speed, drift_angle, slow_down_on_arrival, laser_data, avoiding_wall)
     velocity_publisher.publish(velocity_message)
 
 
