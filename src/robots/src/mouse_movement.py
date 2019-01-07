@@ -18,6 +18,8 @@ map_metadata = MapMetaData(resolution=0.02, width=1000, height=1000)
 robot_odom = Odometry()
 
 avoiding_wall = False
+clear_distance_unscaled = 10
+clear_distance = clear_distance_unscaled
 laser_proximity_threstold = 1.0 # How far should the robot stay from the walls
 laser_data = None
 
@@ -52,6 +54,8 @@ def map_metadataCallback(map_metadata_message):
     '''Map metadata memory update'''
     global map_metadata
     map_metadata = map_metadata_message
+    resolution = map_metadata.resolution
+    clear_distance = resolution * clear_distance_unscaled
 
 
 def cat_pseudo_position(sight_message):
@@ -76,6 +80,12 @@ def cat_pseudo_position(sight_message):
     return closest_cat if closest_cat.dist > 0 else []
 
 
+def stop():
+    global cat_position
+    cat_position = []
+    velocity_publisher.publish(Twist())  
+
+
 def generate_random_coords():
     global map_metadata
     resolution = map_metadata.resolution
@@ -86,46 +96,43 @@ def generate_random_coords():
     return rng_width, rng_height
 
 
-def go_to_goal(x_goal, y_goal):
-    '''PID Controller'''
-    global robot_odom, avoiding_wall
-    distance = 0.2 + 1
-    while distance > 0.2 and not rospy.is_shutdown():
-        velocity_message, distance, avoiding_wall = move_to_goal_laser(robot_odom, x_goal, y_goal, laser_data, avoiding_wall)
-        velocity_publisher.publish(velocity_message)
-        rate.sleep()
-
-    velocity_publisher.publish(Twist())
-
-
-def random_movement():
-    rng_x, rng_y = generate_random_coords()
-    go_to_goal(rng_x, rng_y)
-
-
 def mouse_runaway():
     '''Moves the mouse in the oposite direction of the cats'''
     global cat_position, robot_odom
     str = '[%s] Running away from a cat!'%MOUSE_NAME
     rospy.loginfo_throttle(5, str)
+
     position = robot_odom.pose.pose.position
     x_goal, y_goal = add_spherical_to_cart(position, cat_position)
-    go_to_goal(x_goal, y_goal)
+    mouse_move_to(x_goal, y_goal)
 
 
 def mouse_roam():
-    '''Make the mouse roam the map'''
-    move(velocity_publisher, 3, 0.5, True)
+    '''Moves the mouse in a random direction'''
+    str = '[%s] Roaming.'%MOUSE_NAME
+    rospy.loginfo_throttle(5, str)
+    rng_x, rng_y = generate_random_coords()
+    mouse_move_to(rng_x, rng_y)
+
+
+def mouse_move_to(x_goal, y_goal):
+    '''Moves the mouse in the direction of (x,y)'''
+    global robot_odom, avoiding_wall
+    velocity_message, distance, avoiding_wall = move_to_goal_laser(robot_odom, x_goal, y_goal, laser_data, avoiding_wall)
+    velocity_publisher.publish(velocity_message)
 
 
 def mouse_movement():
     '''Control the mouse movement'''
     global mouse_position
     saw_cat = cat_position != []
-    if saw_cat:
-        mouse_runaway()
-    else:
-        random_movement()
+    distance = clear_distance + 1
+    while distance > clear_distance and not rospy.is_shutdown():
+        if saw_cat:
+            mouse_runaway()
+        else:
+            mouse_roam()
+    stop()
 
 
 def subscribers():

@@ -55,7 +55,6 @@ def map_metadataCallback(map_metadata_message):
     global cat_linear_speed, clear_distance
 
     map_metadata = map_metadata_message
-
     resolution = map_metadata.resolution
     cat_linear_speed = resolution * cat_linear_speed_unscaled
     clear_distance = resolution * clear_distance_unscaled
@@ -190,12 +189,12 @@ def cat_movement():
     # Move
     distance = clear_distance + 1
     saw_mouse = mouse_position != []
-    hear_mouse = noise_position != []
+    heard_mouse = noise_position != []
     while distance > clear_distance and not rospy.is_shutdown():
         if saw_mouse:
             cat_chase()
             startTime = now()
-        elif hear_mouse:
+        elif heard_mouse:
             cat_search()
             startTime = now()
         else:
