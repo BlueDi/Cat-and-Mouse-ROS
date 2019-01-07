@@ -6,7 +6,10 @@ def spherical_to_cartesian(spherical):
     try:
         dist = spherical.dist
     except AttributeError:
-        dist = spherical.volume
+        try:
+            dist = spherical.volume
+        except AttributeError:
+            return 0, 0
     x = dist * cos(spherical.angle)
     y = dist * sin(spherical.angle)
     return x, y

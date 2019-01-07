@@ -188,7 +188,6 @@ def cat_movement():
 
     # Move
     distance = clear_distance + 1
-
     while distance > clear_distance and not rospy.is_shutdown():
         saw_mouse = mouse_position != []
         heard_mouse = noise_position != []
