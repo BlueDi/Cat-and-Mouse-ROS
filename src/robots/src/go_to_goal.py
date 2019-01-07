@@ -91,10 +91,10 @@ def move_to_goal_ex(robot_odom, goal_x, goal_y, bot_linear_speed, bot_angular_sp
     if lasers != None: # Consider laser data if it exists
         dodge = pi / 180 * 30
         deadzone = pi / 180 * 20
-        lt = -dodge
-        gt = dodge
-        dlt = -deadzone
-        dgt = deadzone
+        lt = -dodge + angle_diff
+        gt = dodge + angle_diff
+        dlt = -deadzone + angle_diff
+        dgt = deadzone + angle_diff
         nonBlocked = []
         front_range = []
 
