@@ -66,6 +66,14 @@ def cat_pseudo_position(sight_message):
     '''
     closest_cat = RobotSpotted()
     visible_cats = sight_message.robotsSpotted
+
+    # filter -1 dist cats
+    filtered = []
+    for cat in visible_cats:
+        if cat.dist >= 0:
+            filtered.append(cat)
+    visible_cats = filtered
+
     if len(visible_cats) > 1:
         cat_temp = Pose().position
         for cat in visible_cats:
