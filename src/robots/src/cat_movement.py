@@ -87,16 +87,28 @@ def noiseCallback(noise_message):
 
 def closest_mouse(sight_message):
     visible_mice = sight_message.robotsSpotted
-    if len(visible_mice) > 0:
-        closest_mouse = min(visible_mice, key=lambda x: x.dist)
-    return closest_mouse if closest_mouse.dist > 0 else []
+
+    closest = None
+
+    for mouse in visible_mice:
+        if mouse.dist > 0:
+            if closest == None or mouse.dist < closest.dist:
+                closest = mouse
+
+    return closest if closest != None else []
 
 
 def closest_noise(noise_message):
     noises = noise_message.noises
-    if len(noises) > 0:
-        closest_noise = max(noises, key=lambda x: x.volume)
-    return closest_noise if closest_noise.volume > 0 else []
+
+    closest = None
+
+    for noise in noises:
+        if noise.volume > 0:
+            if closest == None or noise.volume > closest.volume:
+                closest = noise
+
+    return closest if closest != None else []
 
 
 def stop():
