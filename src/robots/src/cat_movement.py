@@ -39,6 +39,7 @@ laser_data = None
 
 avoiding_wall = False
 
+
 def laserCallback(data):
     global laser_proximity_threstold, laser_data
     laser_data = LaserData(
@@ -47,6 +48,7 @@ def laserCallback(data):
         data.angle_increment,
         laser_proximity_threstold
     )
+
 
 def map_metadataCallback(map_metadata_message):
     '''Map metadata memory update'''
@@ -82,33 +84,25 @@ def sightCallback(sight_message):
 def noiseCallback(noise_message):
     '''Mouse Noise memory update'''
     global noise_position
-    noise_position = closest_noise(noise_message)
+    new_noise_position = closest_noise(noise_message)
+    if new_noise_position != []:
+        noise_position = new_noise_position
 
 
 def closest_mouse(sight_message):
-    visible_mice = sight_message.robotsSpotted
+    visible_mice = filter(lambda mouse: mouse.dist > 0, sight_message.robotsSpotted)
 
-    closest = None
-
-    for mouse in visible_mice:
-        if mouse.dist > 0:
-            if closest == None or mouse.dist < closest.dist:
-                closest = mouse
-
-    return closest if closest != None else []
+    if len(visible_mice) > 0:
+        return min(visible_mice, key=lambda x: x.dist)
+    return []
 
 
 def closest_noise(noise_message):
-    noises = noise_message.noises
+    noises = filter(lambda noise: noise.volume > 0, noise_message.noises)
 
-    closest = None
-
-    for noise in noises:
-        if noise.volume > 0:
-            if closest == None or noise.volume > closest.volume:
-                closest = noise
-
-    return closest if closest != None else []
+    if len(noises) > 0:
+        return max(noises, key=lambda x: x.volume)
+    return []
 
 
 def stop():
