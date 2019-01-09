@@ -4,7 +4,6 @@ import sys
 from math import degrees, cos, sin, pi
 import rospy
 import numpy as np
-import time
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry, MapMetaData
 from cat_mouse_world.msg import RobotsSpotted, Noises
@@ -32,7 +31,8 @@ clear_distance_unscaled = 10
 clear_distance = clear_distance_unscaled
 wall_factor = 100
 
-giveUpMilis = 1000 * 10
+now = rospy.Time()
+giveUp = rospy.Duration(10)
 
 laser_proximity_threstold = 1.5 # How far should the robot stay from the walls
 laser_data = None
@@ -83,9 +83,11 @@ def sightCallback(sight_message):
 
 def noiseCallback(noise_message):
     '''Mouse Noise memory update'''
-    global noise_position
+    global noise_position, now
+    
     new_noise_position = closest_noise(noise_message)
-    if new_noise_position != []:
+    if new_noise_position != [] or rospy.get_rostime() > now + rospy.Duration(10):
+        now = rospy.get_rostime()
         noise_position = new_noise_position
 
 
@@ -190,7 +192,7 @@ def cat_movement():
     x_roam, y_roam = generate_random_coords()
 
     # Give up on movement after a set ammount of time, avoid getting stuck
-    startTime = now()
+    startTime = rospy.get_rostime()
 
     # Move
     distance = clear_distance + 1
@@ -200,21 +202,17 @@ def cat_movement():
 
         if saw_mouse:
             cat_chase()
-            startTime = now()
+            startTime = rospy.get_rostime()
         elif heard_mouse:
             cat_search()
-            startTime = now()
+            startTime = rospy.get_rostime()
         else:
             cat_roam(x_roam, y_roam)
-            currentTime = now()
-            if currentTime - startTime >= giveUpMilis:
+            currentTime = rospy.get_rostime()
+            if currentTime - startTime >= giveUp:
                 rospy.logwarn('[%s] Movement timed out', CAT_NAME)
                 break
     stop()
-
-
-def now():
-    return int(round(time.time() * 1000))
 
 
 if __name__ == '__main__':
@@ -228,6 +226,7 @@ if __name__ == '__main__':
 
     try:
         rospy.init_node(CAT_NAME + '_movement')
+        now = rospy.get_rostime()
         rate = rospy.Rate(10)
         
         cmd_vel_topic = '/' + CAT_NAME + '/cmd_vel'
