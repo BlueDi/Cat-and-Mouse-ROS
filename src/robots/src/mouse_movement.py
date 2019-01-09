@@ -152,12 +152,9 @@ def subscribers():
 
 if __name__ == '__main__':
     try:
-        MOUSE_NAME = rospy.get_param("mouse_name")
-    except KeyError:
-        try:
-            MOUSE_NAME = sys.argv[1]
-        except IndexError:
-            MOUSE_NAME = 'mouse0'
+        MOUSE_NAME = sys.argv[1]
+    except IndexError:
+        MOUSE_NAME = 'mouse0'
 
     try:
         rospy.init_node(MOUSE_NAME + '_movement')

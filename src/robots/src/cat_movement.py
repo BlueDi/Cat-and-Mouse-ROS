@@ -217,12 +217,9 @@ def cat_movement():
 
 if __name__ == '__main__':
     try:
-        CAT_NAME = rospy.get_param('cat_name')
-    except KeyError:
-        try:
-            CAT_NAME = sys.argv[1]
-        except IndexError:
-            CAT_NAME = 'cat0'
+        CAT_NAME = sys.argv[1]
+    except IndexError:
+        CAT_NAME = 'cat0'
 
     try:
         rospy.init_node(CAT_NAME + '_movement')
